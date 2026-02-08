@@ -469,11 +469,7 @@ async function loadDailyTopic() {
 // Filtr sözləri yüklə
 async function loadBadWords() {
     try {
-        const response = await fetch('/api/admin/bad-words', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: 'system', password: 'system' })
-        });
+        const response = await fetch('/api/admin/bad-words');
         
         const data = await response.json();
         
@@ -766,11 +762,7 @@ async function loadSuspiciousUsers() {
 }
 
 async function loadAdminFilter() {
-    const response = await fetch('/api/admin/bad-words', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: '618ursamajor618major', password: 'majorursa618' })
-    });
+    const response = await fetch('/api/admin/bad-words');
     const data = await response.json();
     if (data.success) {
         document.getElementById('filter-textarea').value = data.badWords;
@@ -789,11 +781,7 @@ async function saveFilter() {
 }
 
 async function loadDeleteTime() {
-    const response = await fetch('/api/admin/message-delete-time', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: '618ursamajor618major', password: 'majorursa618' })
-    });
+    const response = await fetch('/api/admin/message-delete-time');
     const data = await response.json();
     if (data.success) {
         document.getElementById('group-delete-time').value = data.groupTime;

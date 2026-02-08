@@ -122,7 +122,7 @@ router.post('/daily-topic', isAdmin, async (req, res) => {
 });
 
 // Filtr sözləri əldə et
-router.get('/bad-words', isAdmin, async (req, res) => {
+router.get('/bad-words', async (req, res) => {
   try {
     const result = await pool.query("SELECT value FROM admin_settings WHERE key = 'bad_words'");
     res.json({ success: true, badWords: result.rows[0]?.value || '' });
@@ -148,7 +148,7 @@ router.post('/bad-words', isAdmin, async (req, res) => {
 });
 
 // Mesaj silinmə vaxtı parametrləri əldə et
-router.get('/message-delete-time', isAdmin, async (req, res) => {
+router.get('/message-delete-time', async (req, res) => {
   try {
     const groupResult = await pool.query("SELECT value FROM admin_settings WHERE key = 'group_message_delete_time'");
     const privateResult = await pool.query("SELECT value FROM admin_settings WHERE key = 'private_message_delete_time'");
