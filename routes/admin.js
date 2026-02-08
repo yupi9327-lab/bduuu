@@ -4,7 +4,7 @@ const pool = require('../db');
 
 const router = express.Router();
 
-// Admin autentifikasiya middleware
+// Admin autentifikasiya middleware (sadələşdirilmiş)
 const isAdmin = async (req, res, next) => {
   const { username, password } = req.body;
 
@@ -14,35 +14,23 @@ const isAdmin = async (req, res, next) => {
     return next();
   }
 
-  // Alt admin yoxlaması
+  // Alt admin yoxlaması (cədvəl yoxdursa keç)
   try {
-    // Sub_admins cədvəlinin mövcudluğunu yoxla
-    const tableCheck = await pool.query(`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name = 'sub_admins'
-      );
-    `);
+    const result = await pool.query('SELECT * FROM sub_admins WHERE username = $1', [username]).catch(() => null);
     
-    if (tableCheck.rows[0].exists) {
-      const result = await pool.query('SELECT * FROM sub_admins WHERE username = $1', [username]);
-      
-      if (result.rows.length > 0) {
-        const isValid = await bcrypt.compare(password, result.rows[0].password);
-        if (isValid) {
-          req.isSuperAdmin = false;
-          req.adminId = result.rows[0].id;
-          return next();
-        }
+    if (result && result.rows.length > 0) {
+      const isValid = await bcrypt.compare(password, result.rows[0].password);
+      if (isValid) {
+        req.isSuperAdmin = false;
+        req.adminId = result.rows[0].id;
+        return next();
       }
     }
-    
-    return res.status(401).json({ success: false, message: 'Admin giriş məlumatları səhvdir' });
   } catch (error) {
-    console.error('Admin auth xətası:', error);
-    return res.status(500).json({ success: false, message: 'Server xətası' });
+    // İgnore - alt admin yoxdur
   }
+  
+  return res.status(401).json({ success: false, message: 'Admin giriş məlumatları səhvdir' });
 };
 
 // Admin giriş
@@ -254,16 +242,6 @@ router.post('/sub-admin/create', isAdmin, async (req, res) => {
       return res.status(400).json({ success: false, message: 'İstifadəçi adı və şifrə tələb olunur' });
     }
 
-    // Sub_admins cədvəlinin mövcudluğunu yoxla və yarat
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS sub_admins (
-        id SERIAL PRIMARY KEY,
-        username VARCHAR(100) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
     // Mövcud olub-olmadığını yoxla
     const existing = await pool.query('SELECT id FROM sub_admins WHERE username = $1', [username]);
     if (existing.rows.length > 0) {
@@ -287,24 +265,12 @@ router.post('/sub-admins', isAdmin, async (req, res) => {
   }
 
   try {
-    // Sub_admins cədvəlinin mövcudluğunu yoxla
-    const tableCheck = await pool.query(`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name = 'sub_admins'
-      );
-    `);
-    
-    if (!tableCheck.rows[0].exists) {
-      return res.json({ success: true, subAdmins: [] });
-    }
-    
     const result = await pool.query('SELECT id, username, created_at FROM sub_admins ORDER BY created_at DESC');
     res.json({ success: true, subAdmins: result.rows });
   } catch (error) {
     console.error('Alt adminlər əldə etmə xətası:', error);
-    res.status(500).json({ success: false, message: 'Server xətası' });
+    // Cədvəl yoxdursa boş array qaytar
+    res.json({ success: true, subAdmins: [] });
   }
 });
 
